@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+
+    #chat-container {
+      display: flex;
+      max-width: 1200px;
+      max-height: 1200px;
+      margin: 20px auto;
+      border-radius: 10px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    #embed-section {
+      flex: 3;
+      max-height: calc(100vh - 80px);
+      padding: 10px;
+      border-radius: 5px 0 0 5px;
+      background-color: #fff;
+    }
+
+    #embedded-content {
+      width: 800px;
+      height: 1000px;
+      border: none;
+    }
+
+    #chat-messages {
+      flex: 2;
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+      border-left: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 0 5px 5px 0;
+      background-color: #f9f9f9;
+    }
+
+    #url-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+
+    #message-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+
+    #message-input:focus,
+    #url-input:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    #send-button {
+      width: 100%;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #send-button:hover {
+      background-color: #0056b3;
+    }
+
+    .chat-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="embed-section">
+      <input type="text" id="url-input" placeholder="Enter URL to embed content..." />
+      <button id="send-button" onclick="embedContent()">Embed</button>
+      <div id="embedded-content"></div>
+    </div>
+    <div class="chat-box">
+      <div id="chat-messages"></div>
+      <input type="text" id="message-input" placeholder="Type your message..." />
+      <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  
+  <script>
+    // Replace with your Firebase configuration object
+    const firebaseConfig = {
+      apiKey: "AIzaSyBlj7e8--woFdz7IhRoLeepXxB353DRI24",
+      authDomain: "girls-chat-6de3b.firebaseapp.com",
+      databaseURL: "https://girls-chat-6de3b-default-rtdb.firebaseio.com",
+      projectId: "girls-chat-6de3b",
+      storageBucket: "girls-chat-6de3b.appspot.com",
+      messagingSenderId: "138489176391",
+      appId: "1:138489176391:web:3f723f40f6772c9f832c62"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Get a reference to the Firebase Realtime Database
+    const database = firebase.database();
+
+    // Function to send a message to Firebase
+    function sendMessage() {
+      const messageInput = document.getElementById("message-input");
+      const message = messageInput.value;
+
+      // Clear the input field
+      messageInput.value = "";
+
+      // Add the message to the database
+      database.ref("messages").push({
+        text: message,
+        sender: "user",
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      });
+    }
+
+    // Function to display messages on the page
+    function displayMessages() {
+      const chatMessages = document.getElementById("chat-messages");
+
+      // Listen for new messages in the "messages" node
+      database.ref("messages").on("child_added", (snapshot) => {
+        const message = snapshot.val();
+        const messageElement = document.createElement("div");
+        messageElement.innerText = message.text;
+        messageElement.style.padding = "8px";
+        messageElement.style.borderRadius = "5px";
+        messageElement.style.marginBottom = "5px";
+
+        // Determine if the message is sent by the user or received from others
+        if (message.sender === "user") {
+          messageElement.style.backgroundColor = "#dcf8c6";
+          messageElement.style.alignSelf = "flex-end";
+        } else {
+          messageElement.style.backgroundColor = "#fff";
+          messageElement.style.alignSelf = "flex-start";
+        }
+
+        chatMessages.appendChild(messageElement);
+      });
+    }
+
+    // Call the displayMessages function on page load
+    window.onload = displayMessages;
+
+    // Function to embed content in the right-side section
+    function embedContent() {
+      const urlInput = document.getElementById("url-input");
+      const url = urlInput.value;
+
+      const embeddedContentDiv = document.getElementById("embedded-content");
+
+      if (isValidURL(url)) {
+        // Clear the input field
+        urlInput.value = "";
+
+        // Create an iFrame element and set its attributes
+        const iframe = document.createElement("iframe");
+        iframe.src = url;
+        iframe.width = "100%";
+        iframe.height = "100%";
+        iframe.frameBorder = "0";
+        iframe.style.borderRadius = "5px";
+
+        // Remove any previously embedded content
+        embeddedContentDiv.innerHTML = "";
+
+        // Append the iFrame to the embedded content div
+        embeddedContentDiv.appendChild(iframe);
+      } else {
+        alert("Invalid URL. Please enter a valid URL to embed content.");
+      }
+    }
+
+    // Helper function to validate URLs
+    function isValidURL(url) {
+      const pattern = /^(https?:\/\/)?[\w.-]+\.[a-zA-Z]{2,}(\/.*)*$/;
+      return pattern.test(url);
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
